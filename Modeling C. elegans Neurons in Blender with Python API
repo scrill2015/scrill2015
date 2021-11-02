@@ -1,0 +1,65 @@
+import time
+import math
+import bpy
+from mathutils import Matrix
+import csv 
+#opens csv file to be read and stores it as the variable f 
+with open ('C:/Users/MacLab/Desktop/Modeling/Neuron 43 EM Post Analysis wo Labels.csv') as f:    
+    #sorts through the data in f and makes a list of values from them
+    readout=list(csv.reader(f))
+    #print(readout) 
+
+# Create a cylinder to use as a "template"
+bpy.ops.mesh.primitive_cylinder_add(
+    vertices=32,
+    radius=1,
+    depth=1,
+    enter_editmode=False,
+)
+cyl = bpy.context.object.data
+cyl.name = 'tmp'
+bpy.data.objects.remove(bpy.context.object, do_unlink=True)
+
+for ai, a in enumerate(readout):
+    start_t = time.time()
+    
+    mesh = cyl.copy()
+    mesh.name = a[0]
+    radius = float(a[3])
+    depth = float(a[5])
+    mesh.transform(Matrix.Diagonal([radius, radius, depth, 1]))
+
+    #assign material to object
+    if float(a[18]) == 1:
+        #get material
+        mat = bpy.data.materials.get("Dendrite")
+        print('DR')
+    elif float(a[18]) == 3:
+        #get material
+        mat = bpy.data.materials.get("Both")
+        print('BOTH')
+    elif float(a[18]) == 2:
+        #get material
+        mat = bpy.data.materials.get("Terminal")
+        print('PS')
+    #in any other cases, get the Silhoutte material and add it to the active object
+    else:
+        #get material
+        mat = bpy.data.materials.get("Silhouette")
+        print('NONE')
+    
+    # Copy the template cylinder and scale it to the right radius/depth.
+
+    mesh.materials.append(mat)
+
+    ob = bpy.data.objects.new(a[0], mesh)
+    ob.location = (0, float(a[6]), 45000)
+    ob.rotation_euler[0] = -math.pi / 2
+
+    bpy.context.collection.objects.link(ob)
+
+    print("%d : took %.4f" % (ai, time.time() - start_t))
+
+# Done with the template cylinder so remove it
+bpy.data.meshes.remove(cyl)
+
